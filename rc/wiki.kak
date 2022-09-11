@@ -25,21 +25,19 @@ define-command wiki_enable %{
     add-highlighter buffer/wiki group
     add-highlighter buffer/wiki/tag regex '\B@\S+' 0:link
     add-highlighter buffer/wiki/link regex '\[\w+\]' 0:link
-    hook buffer InsertKey '<ret>' -group wiki %{
-        evaluate-commands %{ try %{
-            execute-keys -draft %{
-                <a-b><a-k>\A@!\w+<ret>
-                :wiki_expand_pic<ret>
-        }} catch %{
-            try %{ execute-keys -draft %{
-                    <a-b><a-k>\A@\w+<ret>
-                    :wiki_expand_tag<ret>
+    hook -group wiki buffer InsertKey '<ret>' %{
+        evaluate-commands %{
+            try %{
+                execute-keys -draft "<a-b><a-k>\A@!\w+<ret>:wiki_expand_pic<ret>"
+            } catch %{
+                try %{
+                    execute-keys -draft "<a-b><a-k>\A@\w+<ret>:wiki_expand_tag<ret>"
+                    execute-keys <backspace>
                 }
-                execute-keys <backspace>
             }
-        }}
+        }
     }
-    hook buffer NormalKey '<ret>' -group wiki %{
+    hook -group wiki buffer NormalKey '<ret>' %{
         try %{ wiki_follow_link }
         try %{ wiki_toggle_checkbox }
     }
@@ -60,7 +58,7 @@ define-command wiki_expand_tag \
         other="$kak_opt_wiki_path/$tag.md"
         relative=$(eval "$kak_opt_wiki_relative_path_program" "$other" $(dirname "$this"))
         # sanity chceck
-        echo "execute-keys  -draft '<a-k>\A@[^@]+<ret>'"
+        echo "execute-keys -draft '<a-k>\A@[^@]+<ret>'"
         echo "execute-keys \"c[$tag]($relative)<esc>\""
         echo "wiki_new_page \"$tag\""
     }
@@ -92,10 +90,7 @@ wiki_new_page %{
 define-command wiki_follow_link \
 -docstring %{ Follow markdown link and open file if exists } %{
     evaluate-commands %{
-        execute-keys %{
-            <esc><a-a>c\[,\)<ret><a-:>
-            <a-i>b
-        }
+        execute-keys "<esc><a-a>c\[,\)<ret><a-:><a-i>b"
         evaluate-commands -try-client %opt{jumpclient} edit -existing %sh{
             echo "'${kak_buffile%/*.md}/$kak_selection'"
         }
@@ -107,10 +102,9 @@ define-command wiki_toggle_checkbox \
 -docstring "Toggle markdown checkbox in current line" %{
     try %{
         try %{
-            execute-keys -draft %{
-                <esc><space>;xs-\s\[\s\]<ret><a-i>[rX
-        }} catch %{
-            execute-keys -draft %{
-                <esc><space>;xs-\s\[X\]<ret><a-i>[r<space>
-    }}}
+            execute-keys -draft "<esc>,;xs-\s\[\s\]<ret><a-i>[rX"
+        } catch %{
+            execute-keys -draft "<esc>,;xs-\s\[X\]<ret><a-i>[r "
+        }
+    }
 }
